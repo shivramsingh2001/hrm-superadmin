@@ -62,7 +62,8 @@
     </style>
 </head>
 <body>
-@php($unread = \App\Models\SuperAdminNotification::visibleTo(auth()->id())->whereNull('read_at')->count())
+@php($unread = \App\Models\SuperAdminNotification::visibleTo(auth()->id())->whereNull('read_at')->count()
+    + \App\Models\BroadcastRecipient::where('recipient_type', 'super_admin')->where('super_admin_id', auth()->id())->whereNull('read_at')->count())
 <div class="sa-shell d-flex">
     <nav class="sa-sidebar p-3 d-flex flex-column">
         <div class="brand">
@@ -76,6 +77,7 @@
         <a href="{{ route('plans.index') }}" class="{{ str_starts_with($r ?? '', 'plans.') ? 'active' : '' }}"><i class="bi bi-tags"></i> Subscription Plans</a>
         <a href="{{ route('feature-registry.index') }}" class="{{ str_starts_with($r ?? '', 'feature-registry.') ? 'active' : '' }}"><i class="bi bi-toggles"></i> Feature Registry</a>
         <a href="{{ route('feature-templates.index') }}" class="{{ str_starts_with($r ?? '', 'feature-templates.') ? 'active' : '' }}"><i class="bi bi-collection"></i> Feature Templates</a>
+        <a href="{{ route('broadcast.index') }}" class="{{ str_starts_with($r ?? '', 'broadcast.') ? 'active' : '' }}"><i class="bi bi-broadcast"></i> Broadcast Notifications</a>
         <a href="{{ route('impersonation.index') }}" class="{{ str_starts_with($r ?? '', 'impersonation.') ? 'active' : '' }}"><i class="bi bi-person-badge"></i> Impersonation</a>
         <a href="{{ route('health.index') }}" class="{{ str_starts_with($r ?? '', 'health.') ? 'active' : '' }}"><i class="bi bi-heart-pulse"></i> Tenant Health</a>
         <a href="{{ route('audit-logs.index') }}" class="{{ str_starts_with($r ?? '', 'audit-logs.') ? 'active' : '' }}"><i class="bi bi-journal-text"></i> Audit Logs</a>

@@ -92,7 +92,7 @@ class ProvisioningController extends Controller
         $data['is_trial'] = $request->boolean('is_trial');
         $data['field_tracking_enabled'] = $request->boolean('field_tracking_enabled');
         if ($request->hasFile('logo')) {
-            $data['logo'] = $request->file('logo')->store('tenant-logos', 'public');
+            $data['logo'] = file_storage()->upload($request->file('logo'), 'tenant_logo')->path;
         }
 
         $inquiry = ! empty($data['inquiry_id']) ? Inquiry::find($data['inquiry_id']) : null;

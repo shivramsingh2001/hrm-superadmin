@@ -47,6 +47,28 @@ return [
             'report' => false,
         ],
 
+        // Google Cloud Storage — same bucket/credentials as the HRM app. Everything from .env
+        // (see D:\HRMNEW\hrm (3)\docs\file-storage.md).
+        'gcs' => [
+            'driver' => 'gcs',
+            'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
+            'key_file_path' => env('GOOGLE_CLOUD_KEY_FILE') ?: null,
+            'key_file' => (function () {
+                $b64 = env('GOOGLE_CLOUD_KEY_JSON_BASE64');
+                $decoded = $b64 ? json_decode((string) base64_decode($b64, true), true) : null;
+
+                return is_array($decoded) ? $decoded : null;
+            })(),
+            'bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+            'path_prefix' => env('GOOGLE_CLOUD_STORAGE_PATH_PREFIX', ''),
+            'storage_api_uri' => env('GOOGLE_CLOUD_STORAGE_API_URI') ?: null,
+            'api_endpoint' => env('GOOGLE_CLOUD_STORAGE_API_ENDPOINT') ?: null,
+            'visibility' => 'private',
+            'visibility_handler' => \League\Flysystem\GoogleCloudStorage\UniformBucketLevelAccessVisibility::class,
+            'throw' => true,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

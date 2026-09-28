@@ -107,7 +107,7 @@
                     <td>
                         <div class="d-flex align-items-center gap-2">
                             @if($t->logo)
-                                <img src="{{ asset('storage/' . $t->logo) }}" class="company-logo" alt="">
+                                <img src="{{ file_url($t->logo, 'tenant_logo') }}" class="company-logo" alt="">
                             @else
                                 <span class="company-logo-fallback">{{ strtoupper(substr($t->company_name, 0, 1)) }}</span>
                             @endif

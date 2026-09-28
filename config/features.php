@@ -201,6 +201,13 @@ return [
         'description' => 'Company-wide announcements with read acknowledgement.',
         'default' => true,
     ],
+    'broadcast_notifications' => [
+        'name' => 'Broadcast notifications',
+        'module' => 'broadcasts',
+        'group' => 'Communication',
+        'description' => 'Compose and send targeted notifications to employees, filtered by role, department, designation, branch or specific people.',
+        'default' => true,
+    ],
     'employee_chat' => [
         'name' => 'Employee chat',
         'module' => 'chat',

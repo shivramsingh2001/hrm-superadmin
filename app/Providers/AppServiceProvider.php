@@ -12,7 +12,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Shared upload/storage service (config/file_storage.php) — same class as the HRM app.
+        $this->app->singleton(\App\Services\Storage\FileStorageService::class);
     }
 
     /**

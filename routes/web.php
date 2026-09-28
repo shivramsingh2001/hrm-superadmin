@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\BroadcastController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EnquiryController;
@@ -154,4 +155,24 @@ Route::middleware('auth')->group(function () {
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/broadcast/{recipient}/read', [NotificationController::class, 'markBroadcastRead'])->name('notifications.broadcast-read');
+
+    // Broadcast Notifications — cross-tenant targeted messaging, writes
+    // directly into the shared broadcast_notifications/broadcast_recipients
+    // tables (see App\Services\Broadcast\BroadcastComposerService).
+    Route::prefix('broadcast')->name('broadcast.')->group(function () {
+        // "Send Broadcast" is now a drawer on the index/history page itself
+        // (resources/views/broadcast/_send-drawer.blade.php) — no separate
+        // /create page.
+        Route::get('/', [BroadcastController::class, 'index'])->name('index');
+
+        // Literal segments MUST be registered before the /{id} wildcard
+        // below, or a request to /broadcast/store would match {id}='store'.
+        Route::middleware('sa_role:superadmin,support')->group(function () {
+            Route::post('/store', [BroadcastController::class, 'store'])->name('store');
+            Route::post('/preview-count', [BroadcastController::class, 'previewCount'])->name('preview-count')->middleware('throttle:30,1');
+        });
+
+        Route::get('/{id}', [BroadcastController::class, 'show'])->name('show');
+    });
 });

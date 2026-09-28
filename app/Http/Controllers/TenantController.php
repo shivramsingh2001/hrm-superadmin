@@ -183,7 +183,8 @@ class TenantController extends Controller
             'state', 'country', 'pincode', 'gst_number', 'pan_number', 'timezone', 'currency', 'currency_symbol']);
 
         if ($request->hasFile('logo')) {
-            $data['logo'] = $request->file('logo')->store('tenant-logos', 'public');
+            // New logo stored first; the previous one is removed after the update commits.
+            $data['logo'] = file_storage()->replace($tenant->logo, $request->file('logo'), 'tenant_logo')->path;
         }
         $legalName = $data['legal_name'] ?? $data['company_name'];
         unset($data['legal_name']);

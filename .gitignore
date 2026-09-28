@@ -22,3 +22,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Google Cloud service-account keys (file storage) — never commit
+*-gcs*.json
+gcs-key*.json
+*service-account*.json

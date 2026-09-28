@@ -18,7 +18,7 @@
         background: #dcfce7; color: #166534; padding: .12rem .4rem; border-radius: 999px; white-space: nowrap; }
     .kpi5-value { font-size: 1.05rem; font-weight: 700; color: #111827; line-height: 1.1; }
     .kpi5-label { font-size: .58rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #9ca3af; margin-top: .1rem; }
-    .kpi5-divider { border-top: 1px solid #f1f2f4; margin: .5rem 0 .4rem; }
+    .kpi5-divider { border-top: 1px solid #f1f2f4; }
     .kpi5-foot { display: flex; }
     .kpi5-stat { flex: 1; min-width: 0; }
     .kpi5-stat + .kpi5-stat { border-left: 1px solid #f1f2f4; padding-left: .5rem; margin-left: .5rem; }

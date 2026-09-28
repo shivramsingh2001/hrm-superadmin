@@ -29,7 +29,7 @@
     <div class="pc-sec">Company logo</div>
     <label class="tc-logo-drop" for="logoInput">
         @if($tenant->logo)
-            <img src="{{ asset('storage/' . $tenant->logo) }}" class="tc-logo-preview" id="logoPreview" alt="Current logo">
+            <img src="{{ file_url($tenant->logo, 'tenant_logo') }}" class="tc-logo-preview" id="logoPreview" alt="Current logo">
             <span class="tc-logo-fallback d-none" id="logoFallback">{{ strtoupper(substr($tenant->company_name, 0, 1)) }}</span>
         @else
             <img src="" class="tc-logo-preview d-none" id="logoPreview" alt="Logo preview">
