@@ -247,7 +247,18 @@ class TenantController extends Controller
             $old, ['feature_key' => $data['feature_key'], 'action' => $data['action']] + ($new ?? []),
             $tenant->id);
 
-        return back()->with('success', "Feature '{$data['feature_key']}' override {$data['action']}d.");
+        $message = "Feature '{$data['feature_key']}' override {$data['action']}d.";
+
+        // The Features tab toggle saves via fetch() without reloading the page.
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => $message,
+                'effective' => $data['action'] === 'enable',
+                'source' => 'override',
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 
     public function recordPayment(Request $request, Tenant $tenant)

@@ -144,22 +144,25 @@
                     @if($f['override_reason'])<br><span class="text-secondary small fst-italic">“{{ $f['override_reason'] }}”</span>@endif
                 </td>
                 <td>{!! $f['plan_value'] ? '<span class="text-success">on</span>' : '<span class="text-secondary">off</span>' !!}</td>
-                <td>{!! $f['effective'] ? '<span class="badge bg-success">enabled</span>' : '<span class="badge bg-secondary">disabled</span>' !!}</td>
-                <td><span class="badge src-{{ $f['source'] }}">{{ $f['source'] }}</span></td>
+                <td class="js-effective">{!! $f['effective'] ? '<span class="badge bg-success">enabled</span>' : '<span class="badge bg-secondary">disabled</span>' !!}</td>
+                <td class="js-source"><span class="badge src-{{ $f['source'] }}">{{ $f['source'] }}</span></td>
                 <td>
-                    <form method="POST" action="{{ route('tenants.features', $tenant) }}" class="d-flex gap-1">
-                        @csrf
-                        <input type="hidden" name="feature_key" value="{{ $key }}">
-                        <input name="reason" class="form-control form-control-sm" placeholder="reason (optional)" style="min-width:90px">
-                        @if($f['effective'])
-                            <button name="action" value="disable" class="btn btn-sm btn-outline-secondary">Off</button>
-                        @else
-                            <button name="action" value="enable" class="btn btn-sm btn-outline-success">On</button>
-                        @endif
-                        @if($f['source'] === 'override')
+                    <div class="d-flex gap-1 align-items-center">
+                        <form method="POST" action="{{ route('tenants.features', $tenant) }}" class="d-flex gap-2 align-items-center flex-grow-1 js-feature-toggle">
+                            @csrf
+                            <input type="hidden" name="feature_key" value="{{ $key }}">
+                            <input type="hidden" name="action" value="{{ $f['effective'] ? 'disable' : 'enable' }}">
+                            <input name="reason" class="form-control form-control-sm" placeholder="reason (optional)" style="min-width:90px">
+                            <div class="form-check form-switch mb-0" title="Turn this feature on/off for this tenant">
+                                <input class="form-check-input" type="checkbox" role="switch" style="width:2.4em;height:1.25em;cursor:pointer" @checked($f['effective'])>
+                            </div>
+                        </form>
+                        <form method="POST" action="{{ route('tenants.features', $tenant) }}" class="js-clear-override {{ $f['source'] === 'override' ? '' : 'd-none' }}">
+                            @csrf
+                            <input type="hidden" name="feature_key" value="{{ $key }}">
                             <button name="action" value="clear" class="btn btn-sm btn-outline-danger" title="Clear override, fall back to plan default">×</button>
-                        @endif
-                    </form>
+                        </form>
+                    </div>
                 </td>
             </tr>
         @endforeach
@@ -750,5 +753,45 @@
             });
         });
     })();
+
+    // Features tab: the switch saves the override in place, no page reload.
+    document.querySelectorAll('.js-feature-toggle').forEach(function (form) {
+        var sw = form.querySelector('[role="switch"]');
+        var action = form.querySelector('input[name="action"]');
+        var row = form.closest('tr');
+
+        form.addEventListener('submit', function (e) { e.preventDefault(); });
+
+        sw.addEventListener('change', function () {
+            var wantOn = sw.checked;
+            action.value = wantOn ? 'enable' : 'disable';
+            sw.disabled = true;
+
+            // getAttribute: form.action is shadowed by the <input name="action">.
+            fetch(form.getAttribute('action'), {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: new FormData(form)
+            })
+                .then(function (r) {
+                    return r.json().then(function (data) { if (!r.ok) throw data; return data; });
+                })
+                .then(function (data) {
+                    row.querySelector('.js-effective').innerHTML = data.effective
+                        ? '<span class="badge bg-success">enabled</span>'
+                        : '<span class="badge bg-secondary">disabled</span>';
+                    row.querySelector('.js-source').innerHTML =
+                        '<span class="badge src-' + data.source + '">' + data.source + '</span>';
+                    row.querySelector('.js-clear-override').classList.remove('d-none');
+                    action.value = data.effective ? 'disable' : 'enable';
+                    saToast(data.message, 'success');
+                })
+                .catch(function (err) {
+                    sw.checked = !wantOn;
+                    saToast((err && err.message) || 'Could not update the feature.', 'error');
+                })
+                .finally(function () { sw.disabled = false; });
+        });
+    });
 </script>
 @endsection

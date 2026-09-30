@@ -115,14 +115,32 @@
         </header>
 
         <main class="p-4">
-            @if(session('success'))<div class="alert alert-success py-2">{{ session('success') }}</div>@endif
             @if(session('error'))<div class="alert alert-danger py-2">{{ session('error') }}</div>@endif
             @if($errors->any())<div class="alert alert-danger py-2"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
             @yield('content')
         </main>
     </div>
 </div>
+<div class="toast-container position-fixed top-0 end-0 p-3" id="saToasts" style="z-index:1090"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // saToast('Saved.', 'success' | 'error') — app-wide toast; flash 'success' messages show through it.
+    function saToast(message, type) {
+        var ok = type !== 'error';
+        var el = document.createElement('div');
+        el.className = 'toast align-items-center border-0 text-white ' + (ok ? 'bg-success' : 'bg-danger');
+        el.setAttribute('role', ok ? 'status' : 'alert');
+        el.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="bi ' + (ok ? 'bi-check-circle' : 'bi-exclamation-triangle')
+            + ' me-2"></i></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div>';
+        el.querySelector('.toast-body').appendChild(document.createTextNode(message));
+        document.getElementById('saToasts').appendChild(el);
+        el.addEventListener('hidden.bs.toast', function () { el.remove(); });
+        new bootstrap.Toast(el, { delay: 4000 }).show();
+    }
+    @if(session('success'))
+        saToast(@json(session('success')), 'success');
+    @endif
+</script>
 @yield('scripts')
 </body>
 </html>
