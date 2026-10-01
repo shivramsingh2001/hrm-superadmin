@@ -90,7 +90,7 @@
                 <tr>
                     <th class="sr">Sr. No.</th>
                     <th>Company</th>
-                    <th>Subdomain</th>
+                    <th>Company code</th>
                     <th>Email</th>
                     <th>Contact no.</th>
                     <th>Plan</th>

@@ -29,7 +29,7 @@ class TenantWelcomeMail extends Mailable
     public function content(): Content
     {
         return new Content(view: 'mail.tenant-welcome', with: [
-            'loginUrl' => 'https://' . $this->subdomain . '.' . (config('app.tenant_domain', 'hrmplatform.com')),
+            'loginUrl' => rtrim((string) config('platform.hrm_web_url'), '/'),
         ]);
     }
 }

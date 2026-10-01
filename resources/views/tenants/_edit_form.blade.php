@@ -84,7 +84,7 @@
 
     <div class="pc-sec">Read-only</div>
     <dl class="row mb-0" style="font-size:.78rem">
-        <dt class="col-5 text-secondary fw-normal">Subdomain</dt><dd class="col-7"><code>{{ $tenant->subdomain }}</code></dd>
+        <dt class="col-5 text-secondary fw-normal">Company code</dt><dd class="col-7"><code>{{ $tenant->subdomain }}</code></dd>
         <dt class="col-5 text-secondary fw-normal">Status</dt><dd class="col-7"><span class="badge badge-status-{{ $tenant->status }}">{{ $tenant->status }}</span></dd>
         <dt class="col-5 text-secondary fw-normal">Created</dt><dd class="col-7">{{ optional($tenant->created_at)->format('d M Y') }}</dd>
     </dl>

@@ -111,7 +111,7 @@ class ProvisioningController extends Controller
         }
 
         NotificationService::broadcast('tenant_provisioned', 'Tenant provisioned: ' . $result['tenant']->company_name,
-            'Subdomain ' . $result['tenant']->subdomain . ' is live.', ['tenant_id' => $result['tenant']->id]);
+            'Company ' . $result['tenant']->subdomain . ' is live.', ['tenant_id' => $result['tenant']->id]);
 
         return redirect()->route('tenants.show', $result['tenant'])
             ->with('success', 'Tenant provisioned.')
