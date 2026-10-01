@@ -229,6 +229,7 @@ class TenantController extends Controller
 
         if ($data['action'] === 'clear') {
             $existing?->delete();
+            $this->features->resetToPlan($tenant->id, $data['feature_key']);
             $new = null;
         } else {
             $row = TenantFeatureOverride::updateOrCreate(
@@ -253,8 +254,8 @@ class TenantController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'message' => $message,
-                'effective' => $data['action'] === 'enable',
-                'source' => 'override',
+                'effective' => $this->features->enabled($tenant->id, $data['feature_key']),
+                'source' => $data['action'] === 'clear' ? 'plan' : 'override',
             ]);
         }
 
@@ -407,13 +408,14 @@ class TenantController extends Controller
      */
     private function applyFeatureDiff(Request $request, Tenant $tenant, array $features, string $context, string $reason): int
     {
-        $sub = $tenant->activeSubscription();
-        $planFeatures = $sub?->features_snapshot ?? [];
         $changed = 0;
+        $wanted = [];
 
         foreach (array_keys(config('features')) as $key) {
             $want = (bool) ($features[$key] ?? false);
-            $planVal = (bool) ($planFeatures[$key] ?? config("features.$key.default", false));
+            $wanted[$key] = $want;
+            // Compare with the plan itself — the snapshot holds the tenant's current set.
+            $planVal = $this->features->planValue($tenant->id, $key);
             $existing = TenantFeatureOverride::where('tenant_id', $tenant->id)->where('feature_key', $key)->first();
 
             if ($want === $planVal) {
@@ -432,6 +434,9 @@ class TenantController extends Controller
                 $changed++;
             }
         }
+
+        // Snapshot = exactly the posted feature set (kept in sync with the overrides).
+        $this->features->writeSnapshot($tenant->id, $wanted);
 
         if ($changed > 0) {
             $this->features->bust($tenant->id);

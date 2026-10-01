@@ -179,7 +179,9 @@ class ProvisioningService
                     $sub = TenantSubscription::create([
                         'tenant_id' => $tenant->id,
                         'plan_id' => $plan->id,
-                        'features_snapshot' => $plan->features ?? [],   // model casts array -> json
+                        // The tenant's actual feature set: the ticks from the create form
+                        // (every registered key), falling back to the plan when not posted.
+                        'features_snapshot' => $this->chosenFeatures($plan, $input['features'] ?? []),
                         'start_date' => now()->toDateString(),
                         'end_date' => $endDate,
                         'trial_ends_at' => $isTrial ? now()->addDays((int) ($plan->trial_days ?: 14)) : null,
@@ -342,6 +344,23 @@ class ProvisioningService
     }
 
     /** @param array<string,mixed> $input */
+    /**
+     * Full key => bool feature map for the new subscription: the posted choice
+     * where given, otherwise the plan's value, otherwise the config default.
+     */
+    private function chosenFeatures($plan, array $desired): array
+    {
+        $planFeatures = $plan->features ?? [];
+        $out = [];
+        foreach (config('features') as $key => $meta) {
+            $out[$key] = array_key_exists($key, $desired)
+                ? (bool) $desired[$key]
+                : (bool) ($planFeatures[$key] ?? ($meta['default'] ?? false));
+        }
+
+        return $out;
+    }
+
     private function scrubInput(array $input): array
     {
         unset($input['admin_password'], $input['_token']);

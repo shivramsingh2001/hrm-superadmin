@@ -153,6 +153,7 @@ class TenantController extends ApiController
         foreach ($data['overrides'] as $o) {
             if ($o['action'] === 'clear') {
                 TenantFeatureOverride::where('tenant_id', $tenant->id)->where('feature_key', $o['feature_key'])->delete();
+                $this->features->resetToPlan($tenant->id, $o['feature_key']);
             } else {
                 TenantFeatureOverride::updateOrCreate(
                     ['tenant_id' => $tenant->id, 'feature_key' => $o['feature_key']],

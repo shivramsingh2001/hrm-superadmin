@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\FeatureRegistry;
+use App\Models\SubscriptionPlan;
 use App\Models\TenantFeatureOverride;
 use App\Models\TenantSubscription;
 use Illuminate\Support\Facades\Cache;
@@ -67,18 +68,23 @@ class FeatureService
     {
         $sub = TenantSubscription::query()->where('tenant_id', $tenantId)->active()->first();
         $snapshot = $sub->features_snapshot ?? [];
+        $plan = $sub ? (SubscriptionPlan::find($sub->plan_id)?->features ?? []) : [];
 
         $overrides = TenantFeatureOverride::where('tenant_id', $tenantId)
             ->get()->keyBy('feature_key');
 
         $out = [];
         foreach (config('features') as $key => $meta) {
-            $planValue = array_key_exists($key, $snapshot)
-                ? (bool) $snapshot[$key]
+            // "Plan default" column = what the plan itself offers; the snapshot holds
+            // the tenant's actual feature set (kept in sync by syncSnapshot()).
+            $planValue = array_key_exists($key, $plan)
+                ? (bool) $plan[$key]
                 : (bool) ($meta['default'] ?? false);
 
             $ov = $overrides->get($key);
-            $effective = $ov ? (bool) $ov->is_enabled : $planValue;
+            $effective = $ov
+                ? (bool) $ov->is_enabled
+                : (array_key_exists($key, $snapshot) ? (bool) $snapshot[$key] : (bool) ($meta['default'] ?? false));
             $source = $ov ? 'override' : (array_key_exists($key, $snapshot) ? 'plan' : 'default');
 
             $out[$key] = [
@@ -100,8 +106,78 @@ class FeatureService
      * write) and ask the HRM app to do the same so the change is visible there
      * immediately rather than after its own TTL.
      */
+    /**
+     * Keep the active subscription's features_snapshot equal to the tenant's
+     * effective feature set: every registered key present, and every override
+     * written into it. Overrides stay as the "differs from plan" record; the
+     * snapshot is the one row that always shows what the tenant actually has.
+     * Called from bust(), i.e. after every override/subscription write.
+     */
+    public function syncSnapshot(int $tenantId): void
+    {
+        $sub = TenantSubscription::query()->where('tenant_id', $tenantId)->active()->first();
+        if (! $sub) {
+            return;
+        }
+
+        $snapshot = $sub->features_snapshot ?? [];
+        $synced = [];
+        foreach (config('features') as $key => $meta) {
+            $synced[$key] = array_key_exists($key, $snapshot)
+                ? (bool) $snapshot[$key]
+                : (bool) ($meta['default'] ?? false);
+        }
+        foreach (TenantFeatureOverride::where('tenant_id', $tenantId)->get() as $ov) {
+            if (array_key_exists($ov->feature_key, $synced)) {
+                $synced[$ov->feature_key] = (bool) $ov->is_enabled;
+            }
+        }
+
+        if ($synced !== $snapshot) {
+            $sub->update(['features_snapshot' => $synced]);
+        }
+    }
+
+    /**
+     * An override was cleared ("fall back to plan"): put the plan's own value
+     * for that key back into the snapshot. Call before bust().
+     */
+    public function resetToPlan(int $tenantId, string $key): void
+    {
+        $this->writeSnapshot($tenantId, [$key => $this->planValue($tenantId, $key)]);
+    }
+
+    /** What the tenant's current plan itself offers for a key (plan JSON, else config default). */
+    public function planValue(int $tenantId, string $key): bool
+    {
+        $sub = TenantSubscription::query()->where('tenant_id', $tenantId)->active()->first();
+        $plan = $sub ? (SubscriptionPlan::find($sub->plan_id)?->features ?? []) : [];
+
+        return array_key_exists($key, $plan)
+            ? (bool) $plan[$key]
+            : (bool) config("features.{$key}.default", false);
+    }
+
+    /** Merge key => bool values into the active subscription's snapshot. */
+    public function writeSnapshot(int $tenantId, array $values): void
+    {
+        $sub = TenantSubscription::query()->where('tenant_id', $tenantId)->active()->first();
+        if (! $sub || ! $values) {
+            return;
+        }
+
+        $snapshot = $sub->features_snapshot ?? [];
+        foreach ($values as $key => $on) {
+            $snapshot[$key] = (bool) $on;
+        }
+
+        $sub->update(['features_snapshot' => $snapshot]);
+    }
+
     public function bust(int $tenantId): void
     {
+        $this->syncSnapshot($tenantId);
+
         foreach (array_keys(config('features')) as $key) {
             Cache::forget("feat:{$tenantId}:{$key}");
         }

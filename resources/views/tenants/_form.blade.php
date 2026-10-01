@@ -1,5 +1,7 @@
 @php
-    $featureGroups = collect($features)->groupBy('group');
+    // preserveKeys: the inner loop's $key must stay the feature key (features[attendance]),
+    // not a 0..n index — the server reads features.{key}.
+    $featureGroups = collect($features)->groupBy('group', true);
 @endphp
 
 <style>
@@ -67,7 +69,7 @@
                 <input name="company_name" value="{{ old('company_name', $prefill['company_name'] ?? '') }}" class="form-control form-control-sm" placeholder="e.g. Acme Technologies Pvt Ltd" required></div>
             <div class="col-6"><label class="form-label">Display name</label>
                 <input name="display_name" value="{{ old('display_name') }}" class="form-control form-control-sm" placeholder="Short name shown in the app"></div>
-            <div class="col-6"><label class="form-label">Subdomain * <span class="text-secondary" style="text-transform:none">.hrmplatform</span></label>
+            <div class="col-6"><label class="form-label">Company code * <span class="text-secondary" style="text-transform:none">(careers page &amp; mobile app login)</span></label>
                 <input name="subdomain" value="{{ old('subdomain', $prefill['subdomain'] ?? '') }}" class="form-control form-control-sm" placeholder="e.g. acme-tech" required pattern="[a-z0-9-]{3,50}"></div>
             <div class="col-6"><label class="form-label">Legal name</label>
                 <input name="legal_name" value="{{ old('legal_name') }}" class="form-control form-control-sm" placeholder="Registered legal entity name"></div>
