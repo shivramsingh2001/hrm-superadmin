@@ -101,14 +101,25 @@ class MetricsSnapshot extends Command
             ->whereNotNull('tenant_id')
             ->groupBy('tenant_id')->get()->keyBy('tenant_id');
 
+        // users.last_login_at isn't always written by the HRM app (it was empty for every user
+        // on the dev DB while the audit log had hundreds of logins), so activity also comes from
+        // the audit trail: latest successful login, and distinct users who logged in in 30 days.
+        $audit = DB::table('audit_logs')
+            ->where('action', 'auth.login_success')->whereNotNull('tenant_id')
+            ->selectRaw('tenant_id, MAX(created_at) last_login,
+                COUNT(DISTINCT CASE WHEN created_at >= ? THEN actor_id END) users_30d', [now()->copy()->subDays(30)])
+            ->groupBy('tenant_id')->get()->keyBy('tenant_id');
+
         $limits = Tenant::pluck('max_employees', 'id');
         $n = 0;
 
         foreach ($limits as $tid => $limit) {
             $a = $agg->get($tid);
+            $l = $audit->get($tid);
             $active = (int) ($a->active ?? 0);
             $limit = (int) $limit ?: 0;
-            $last = $a->last_activity ?? null;
+            $last = max($a->last_activity ?? null, $l->last_login ?? null); // later of the two (string compare of Y-m-d H:i:s)
+            $logins30d = max((int) ($a->logins_30d ?? 0), (int) ($l->users_30d ?? 0));
 
             TenantHealth::updateOrCreate(
                 ['tenant_id' => $tid],
@@ -116,7 +127,7 @@ class MetricsSnapshot extends Command
                     'snapshot_date' => $today,
                     'users_total' => (int) ($a->total ?? 0),
                     'users_active' => $active,
-                    'logins_30d' => (int) ($a->logins_30d ?? 0),
+                    'logins_30d' => $logins30d,
                     'last_activity_at' => $last,
                     'seat_limit' => $limit,
                     'seat_utilisation' => $limit > 0 ? round($active / $limit * 100, 2) : 0,

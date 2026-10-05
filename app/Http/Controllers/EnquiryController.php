@@ -47,7 +47,61 @@ class EnquiryController extends Controller
             'admins' => SuperAdmin::orderBy('name')->pluck('name', 'id'),
             'plans' => SubscriptionPlan::orderBy('name')->pluck('name', 'slug'),
             'statuses' => array_keys(self::TRANSITIONS),
+            // "New enquiry" side drawer (enquiries/_create-drawer.blade.php): active admins / plans only
+            'drawerAdmins' => SuperAdmin::where('is_active', true)->orderBy('name')->pluck('name', 'id'),
+            'drawerPlans' => SubscriptionPlan::where('is_active', true)->orderBy('sort_order')->pluck('name', 'slug'),
         ]);
+    }
+
+    /**
+     * Manual entry — a lead that came by phone, email, referral, event… (website leads use
+     * ContactController). The form is a side drawer on the list page; this URL just opens it.
+     */
+    public function create()
+    {
+        return redirect()->route('enquiries.index', ['new' => 1]);
+    }
+
+    public function store(Request $request)
+    {
+        // On failure Laravel redirects back to the list with errors + old input; the `_drawer`
+        // field (flashed with old input) makes the list re-open the drawer with them.
+        $data = $request->validate([
+            'company_name' => ['required', 'string', 'max:255'],
+            'contact_name' => ['required', 'string', 'max:255'],
+            'work_email' => ['required', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'plan_interest' => ['nullable', 'string', 'max:100'],
+            'employee_count' => ['nullable', 'integer', 'min:1', 'max:50000'],
+            'message' => ['nullable', 'string', 'max:1000'],
+            'source' => ['nullable', 'string', 'max:50'],
+            'assigned_admin_id' => ['nullable', 'integer', 'exists:super_admins,id'],
+            'note' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $source = $data['source'] ?? null;
+        $note = $data['note'] ?? null;
+        unset($data['source'], $data['note']);
+
+        $inquiry = Inquiry::create($data + ['status' => 'new']);
+
+        // There is no source column — record where the lead came from (and any first note) in the notes trail.
+        $firstNote = trim('Created manually' . ($source ? " (source: {$source})" : '') . '.' . ($note ? ' ' . $note : ''));
+        $inquiry->update(['notes' => $this->appendNote($inquiry, $firstNote, $request->user()->name)]);
+
+        AuditLogger::record('enquiry.created', 'inquiries', $inquiry->id, null,
+            ['company_name' => $inquiry->company_name, 'source' => $source ?: 'manual']);
+
+        NotificationService::broadcast(
+            'new_enquiry',
+            'New enquiry: ' . $inquiry->company_name,
+            "{$inquiry->contact_name} <{$inquiry->work_email}> · added by {$request->user()->name}"
+                . ($source ? " · source: {$source}" : ''),
+            ['inquiry_id' => $inquiry->id],
+        );
+
+        return redirect()->route('enquiries.show', $inquiry)->with('success', 'Enquiry created.');
     }
 
     public function show(Inquiry $inquiry)

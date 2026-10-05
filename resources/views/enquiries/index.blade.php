@@ -38,9 +38,14 @@
             <h2>Enquiries</h2>
             <span class="sub">{{ $enquiries->total() }} total · {{ $newCount }} new</span>
         </div>
-        <a href="{{ route('enquiries.export', request()->query()) }}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-download"></i> Export CSV
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('enquiries.export', request()->query()) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-download"></i> Export CSV
+            </a>
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="offcanvas" data-bs-target="#enqCreateDrawer" aria-controls="enqCreateDrawer">
+                <i class="bi bi-plus-lg"></i> New enquiry
+            </button>
+        </div>
     </div>
 
     <div class="enq-filters">
@@ -138,4 +143,6 @@
     </div></div>
     <div class="mt-3">{{ $enquiries->links() }}</div>
 </div>
+
+@include('enquiries._create-drawer')
 @endsection

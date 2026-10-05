@@ -41,12 +41,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/dashboard/refresh', [DashboardController::class, 'refresh'])->name('dashboard.refresh')->middleware('throttle:6,1');
     Route::get('/tenant-health', [\App\Http\Controllers\HealthController::class, 'index'])->name('health.index');
     Route::get('/api-console', [\App\Http\Controllers\ApiConsoleController::class, 'index'])->name('api-console');
 
     // Enquiries → payment
     Route::get('/enquiries', [EnquiryController::class, 'index'])->name('enquiries.index');
     Route::get('/enquiries/export', [EnquiryController::class, 'export'])->name('enquiries.export');
+    Route::get('/enquiries/create', [EnquiryController::class, 'create'])->name('enquiries.create');
+    Route::post('/enquiries', [EnquiryController::class, 'store'])->name('enquiries.store');
     Route::get('/enquiries/{inquiry}', [EnquiryController::class, 'show'])->name('enquiries.show');
     Route::post('/enquiries/{inquiry}/status', [EnquiryController::class, 'updateStatus'])->name('enquiries.status');
     Route::post('/enquiries/{inquiry}/note', [EnquiryController::class, 'addNote'])->name('enquiries.note');
@@ -154,6 +157,10 @@ Route::middleware('auth')->group(function () {
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    // Header bell dropdown (same behaviour as the HRM app's bell)
+    Route::get('/notifications/latest', [NotificationController::class, 'latest'])->name('notifications.latest');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unread'])->name('notifications.unread-count');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/broadcast/{recipient}/read', [NotificationController::class, 'markBroadcastRead'])->name('notifications.broadcast-read');
 

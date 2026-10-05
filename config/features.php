@@ -23,7 +23,7 @@ return [
         'name' => 'Attendance',
         'module' => 'attendance',
         'group' => 'Attendance & Time',
-        'description' => 'Clock in / out, daily timesheet and the attendance register.',
+        'description' => 'Manual clock in / out from the app (no face or biometric) and the employee Attendance page.',
         'default' => true,
     ],
     'attendance_face' => [
@@ -226,7 +226,7 @@ return [
         'name' => 'Daily reports',
         'module' => 'reports',
         'group' => 'Communication',
-        'description' => 'End-of-day work reports submitted by employees.',
+        'description' => 'The Reports section: attendance, leave, payroll, project, task, expense and asset reports.',
         'default' => true,
     ],
 

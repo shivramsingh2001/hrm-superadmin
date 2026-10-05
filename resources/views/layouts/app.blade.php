@@ -51,6 +51,28 @@
         .logout-btn:hover { background:#fef2f2; border-color:#fecaca; color:#dc2626; }
 
         .card { border:1px solid #e5e7eb; }
+
+        /* Notification bell dropdown */
+        .sa-bell-badge { position:absolute; top:-3px; right:-4px; min-width:16px; height:16px; padding:0 4px; border-radius:999px;
+            background:#2563eb; color:#fff; font-size:.58rem; font-weight:700; line-height:16px; text-align:center; border:2px solid #fff; box-sizing:content-box; }
+        .sa-bell-menu { width:340px; border:1px solid #e5e7eb; border-radius:.6rem; box-shadow:0 10px 30px rgba(15,23,42,.12); overflow:hidden; }
+        .sa-bell-head { display:flex; align-items:center; justify-content:space-between; padding:.55rem .8rem; border-bottom:1px solid #f1f2f4;
+            font-size:.8rem; font-weight:700; color:#111827; }
+        .sa-bell-head a { font-size:.7rem; font-weight:600; color:#2563eb; text-decoration:none; }
+        .sa-bell-unread { font-weight:400; color:#9ca3af; font-size:.7rem; }
+        .sa-bell-list { max-height:380px; overflow-y:auto; }
+        .sa-bell-item { display:flex; gap:.6rem; padding:.55rem .8rem; border-bottom:1px solid #f1f2f4; text-decoration:none; color:inherit; cursor:pointer; }
+        .sa-bell-item:hover { background:#f8fafc; }
+        .sa-bell-item.unread { background:#eff6ff; }
+        .sa-bell-item .ic { width:1.8rem; height:1.8rem; flex:none; border-radius:.45rem; display:inline-flex; align-items:center; justify-content:center;
+            background:#eff6ff; color:#2563eb; font-size:.85rem; }
+        .sa-bell-item.unread .ic { background:#2563eb; color:#fff; }
+        .sa-bell-item .t { font-size:.76rem; font-weight:600; color:#111827; line-height:1.3; }
+        .sa-bell-item .b { font-size:.7rem; color:#6b7280; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+        .sa-bell-item .w { font-size:.64rem; color:#9ca3af; margin-top:.1rem; }
+        .sa-bell-empty { padding:1.4rem .8rem; text-align:center; color:#9ca3af; font-size:.76rem; }
+        .sa-bell-foot { display:block; text-align:center; padding:.5rem; font-size:.74rem; font-weight:600; color:#2563eb; text-decoration:none; border-top:1px solid #f1f2f4; }
+        .sa-bell-foot:hover { background:#f8fafc; }
         .kpi { font-size:1.7rem; font-weight:700; }
         .badge-status-active { background:#dcfce7; color:#166534; }
         .badge-status-suspended { background:#fee2e2; color:#991b1b; }
@@ -97,10 +119,26 @@
                 @hasSection('subtitle')<div class="subtitle">@yield('subtitle')</div>@endif
             </div>
             <div class="d-flex align-items-center gap-2">
-                <a href="{{ route('notifications.index') }}" class="icon-btn position-relative" title="Notifications">
-                    <i class="bi bi-bell fs-6"></i>
-                    @if($unread)<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:.6rem">{{ $unread }}</span>@endif
-                </a>
+                {{-- Page-specific header controls (e.g. the dashboard's period filter) --}}
+                @hasSection('header-actions')
+                    <div class="d-flex align-items-center gap-2 pe-2 me-1 border-end">@yield('header-actions')</div>
+                @endif
+                {{-- Notification bell — dropdown like the HRM app: latest 10, mark read, mark all read, View all --}}
+                <div class="dropdown" id="saBell">
+                    <button type="button" class="icon-btn position-relative border-0" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                        aria-expanded="false" title="Notifications" aria-label="Notifications" id="saBellToggle">
+                        <i class="bi bi-bell fs-6"></i>
+                        <span class="sa-bell-badge" id="saBellBadge" @if(! $unread) style="display:none" @endif>{{ $unread > 99 ? '99+' : $unread }}</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end sa-bell-menu p-0">
+                        <div class="sa-bell-head">
+                            <span>Notifications <span class="sa-bell-unread" id="saBellUnreadText">{{ $unread ? '(' . $unread . ' unread)' : '' }}</span></span>
+                            <a href="#" id="saBellReadAll">Mark all read</a>
+                        </div>
+                        <div class="sa-bell-list" id="saBellList"><div class="sa-bell-empty">Loading…</div></div>
+                        <a href="{{ route('notifications.index') }}" class="sa-bell-foot">View all</a>
+                    </div>
+                </div>
                 <div class="d-flex align-items-center gap-2 ms-1 pe-2 border-end">
                     <span class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
                     <div>
@@ -140,6 +178,64 @@
     @if(session('success'))
         saToast(@json(session('success')), 'success');
     @endif
+
+    // Notification bell: load the latest on open, mark read on click, poll the count every minute.
+    (function () {
+        const csrf = @json(csrf_token());
+        const latestUrl = @json(route('notifications.latest'));
+        const countUrl = @json(route('notifications.unread-count'));
+        const readAllUrl = @json(route('notifications.read-all'));
+        const list = document.getElementById('saBellList');
+        const badge = document.getElementById('saBellBadge');
+        const unreadText = document.getElementById('saBellUnreadText');
+        if (!list) return;
+
+        const esc = s => { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; };
+        const post = url => fetch(url, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' } });
+
+        function setCount(n) {
+            badge.style.display = n > 0 ? '' : 'none';
+            badge.textContent = n > 99 ? '99+' : n;
+            unreadText.textContent = n > 0 ? '(' + n + ' unread)' : '';
+        }
+
+        function load() {
+            fetch(latestUrl + '?limit=10', { headers: { 'Accept': 'application/json' } })
+                .then(r => r.json())
+                .then(res => {
+                    setCount(res.unread_count || 0);
+                    const items = res.data || [];
+                    if (!items.length) { list.innerHTML = '<div class="sa-bell-empty">No notifications yet</div>'; return; }
+                    list.innerHTML = items.map(n => `
+                        <div class="sa-bell-item ${n.is_read ? '' : 'unread'}" data-read="${esc(n.read_url)}" data-url="${esc(n.url || '')}">
+                            <span class="ic"><i class="bi ${esc(n.icon)}"></i></span>
+                            <span style="min-width:0">
+                                <span class="t d-block">${esc(n.title)}</span>
+                                ${n.body ? `<span class="b">${esc(n.body)}</span>` : ''}
+                                <span class="w d-block">${esc(n.when)} · ${esc(n.type)}</span>
+                            </span>
+                        </div>`).join('');
+                    list.querySelectorAll('.sa-bell-item').forEach(el => el.addEventListener('click', function () {
+                        const go = () => { if (this.dataset.url) window.location.href = this.dataset.url; };
+                        if (this.classList.contains('unread')) {
+                            post(this.dataset.read).then(() => { this.classList.remove('unread'); refreshCount(); go(); });
+                        } else { go(); }
+                    }));
+                })
+                .catch(() => { list.innerHTML = '<div class="sa-bell-empty">Could not load notifications</div>'; });
+        }
+
+        function refreshCount() {
+            fetch(countUrl, { headers: { 'Accept': 'application/json' } }).then(r => r.json()).then(d => setCount(d.unread_count || 0)).catch(() => {});
+        }
+
+        document.getElementById('saBellToggle').addEventListener('click', load);
+        document.getElementById('saBellReadAll').addEventListener('click', function (e) {
+            e.preventDefault();
+            post(readAllUrl).then(load);
+        });
+        setInterval(refreshCount, 60000);
+    })();
 </script>
 @yield('scripts')
 </body>
