@@ -139,6 +139,8 @@ class ProvisioningService
                 $shift->fill([
                     'start_time' => $start,
                     'end_time' => $end,
+                    // Same rule as the HRM's ShiftWindow: end on/before start = ends next day.
+                    'is_overnight' => Carbon::parse($end)->lessThanOrEqualTo(Carbon::parse($start)),
                     'total_hours' => number_format($this->hoursBetween($start, $end), 2, '.', ''),
                     'grace_minutes' => (int) ($sc['grace_minutes'] ?? $shiftDefaults['grace_minutes']),
                     'break_time' => (int) ($sc['break_time'] ?? $shiftDefaults['break_time']),

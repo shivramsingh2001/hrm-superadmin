@@ -15,7 +15,8 @@ class PlanController extends Controller
     public function index()
     {
         $plans = SubscriptionPlan::orderBy('sort_order')->orderBy('id')->get();
-        $counts = TenantSubscription::query()->active()->selectRaw('plan_id, count(distinct tenant_id) c')
+        // reorder(): active() sorts by start_date, which MySQL rejects in a grouped query (only_full_group_by).
+        $counts = TenantSubscription::query()->active()->reorder()->selectRaw('plan_id, count(distinct tenant_id) c')
             ->groupBy('plan_id')->pluck('c', 'plan_id');
 
         return view('plans.index', compact('plans', 'counts'));
