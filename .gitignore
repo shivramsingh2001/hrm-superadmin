@@ -27,3 +27,5 @@ Thumbs.db
 *-gcs*.json
 gcs-key*.json
 *service-account*.json
+/storage/google/
+/storage/google/shurthrms-6e32e68b34e6.json
