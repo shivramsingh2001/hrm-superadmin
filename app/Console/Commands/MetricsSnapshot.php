@@ -130,7 +130,9 @@ class MetricsSnapshot extends Command
                     'logins_30d' => $logins30d,
                     'last_activity_at' => $last,
                     'seat_limit' => $limit,
-                    'seat_utilisation' => $limit > 0 ? round($active / $limit * 100, 2) : 0,
+                    // column is DECIMAL(5,2): cap at 999.99 so a company far over its seat limit
+                    // (e.g. 652 active on 30 seats) doesn't abort the snapshot for every later tenant
+                    'seat_utilisation' => $limit > 0 ? min(999.99, round($active / $limit * 100, 2)) : 0,
                     'is_stale' => ! $last || \Illuminate\Support\Carbon::parse($last)->lt(now()->subDays(14)),
                     'updated_at' => now(),
                 ],

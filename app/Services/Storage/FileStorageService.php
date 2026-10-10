@@ -605,10 +605,10 @@ class FileStorageService
         return array_values(array_unique(array_filter($disks)));
     }
 
-    /** The `uploads` disk is rooted at public/ — never touch anything outside uploads/ there. */
+    /** The `uploads` disk is rooted at public/ — never touch anything outside uploads/ and upload_new/ there. */
     private function diskAccepts(string $diskName, string $path): bool
     {
-        return $diskName !== 'uploads' || str_starts_with($path, 'uploads/');
+        return $diskName !== 'uploads' || str_starts_with($path, 'uploads/') || str_starts_with($path, 'upload_new/');
     }
 
     /** Real path of a legacy/local copy, confined to its root and allowed prefixes. */

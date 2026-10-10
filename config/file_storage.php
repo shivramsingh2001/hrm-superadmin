@@ -34,7 +34,7 @@ return [
     'modules' => [
         // Same key/folder as in the HRM app's config — keep them identical.
         'tenant_logo' => [
-            'folder' => 'uploads/tenants/logos',
+            'folder' => 'upload_new/tenants/logos',
             'ext' => ['jpg', 'jpeg', 'png', 'webp'],
             'max' => 2048,
             'public' => true,
