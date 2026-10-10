@@ -134,6 +134,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/feature-templates/{template}/apply', [FeatureTemplateController::class, 'apply'])->name('feature-templates.apply');
     });
 
+    // Platform maintenance mode (HRM web + mobile API). Everyone can view;
+    // only superadmins change it.
+    Route::get('/maintenance', [\App\Http\Controllers\MaintenanceController::class, 'index'])->name('maintenance.index');
+    Route::middleware('sa_role:superadmin')->group(function () {
+        Route::post('/maintenance', [\App\Http\Controllers\MaintenanceController::class, 'update'])->name('maintenance.update');
+        Route::post('/maintenance/disable', [\App\Http\Controllers\MaintenanceController::class, 'disable'])->name('maintenance.disable');
+    });
+
     // Audit logs
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     Route::get('/audit-logs/export', [AuditLogController::class, 'export'])->name('audit-logs.export');

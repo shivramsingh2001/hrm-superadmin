@@ -11,6 +11,10 @@ return [
     // SUPERADMIN_INTERNAL_TOKEN. Empty = skip the cross-app call (rely on TTL).
     'internal_token' => env('SUPERADMIN_INTERNAL_TOKEN', ''),
 
+    // Timezone the HRM app runs in (its APP_TIMEZONE). Shared timestamps the
+    // HRM reads — e.g. maintenance_modes start/end — are written in this zone.
+    'hrm_timezone' => env('HRM_TIMEZONE', 'Asia/Kolkata'),
+
     // Public tenant domain used to build login URLs shown in the panel / emails.
     'tenant_domain' => env('TENANT_DOMAIN', 'hrmplatform.com'),
 

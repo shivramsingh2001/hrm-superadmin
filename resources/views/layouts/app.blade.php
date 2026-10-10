@@ -101,6 +101,7 @@
         <a href="{{ route('feature-templates.index') }}" class="{{ str_starts_with($r ?? '', 'feature-templates.') ? 'active' : '' }}"><i class="bi bi-collection"></i> Feature Templates</a>
         <a href="{{ route('broadcast.index') }}" class="{{ str_starts_with($r ?? '', 'broadcast.') ? 'active' : '' }}"><i class="bi bi-broadcast"></i> Broadcast Notifications</a>
         <a href="{{ route('impersonation.index') }}" class="{{ str_starts_with($r ?? '', 'impersonation.') ? 'active' : '' }}"><i class="bi bi-person-badge"></i> Impersonation</a>
+        <a href="{{ route('maintenance.index') }}" class="{{ str_starts_with($r ?? '', 'maintenance.') ? 'active' : '' }}"><i class="bi bi-cone-striped"></i> Maintenance Mode</a>
         <a href="{{ route('health.index') }}" class="{{ str_starts_with($r ?? '', 'health.') ? 'active' : '' }}"><i class="bi bi-heart-pulse"></i> Tenant Health</a>
         <a href="{{ route('audit-logs.index') }}" class="{{ str_starts_with($r ?? '', 'audit-logs.') ? 'active' : '' }}"><i class="bi bi-journal-text"></i> Audit Logs</a>
         <a href="{{ route('api-console') }}" class="{{ $r === 'api-console' ? 'active' : '' }}"><i class="bi bi-terminal"></i> API Console</a>
